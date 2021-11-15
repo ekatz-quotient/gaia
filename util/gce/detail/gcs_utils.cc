@@ -75,7 +75,8 @@ StatusObject<HttpsClientPool::ClientHandle> ApiSenderBase::SendGeneric(unsigned 
     }
 
     if (ec == system::errc::operation_not_permitted) {
-      return Status(StatusCode::IO_ERROR, "Disabled operation");
+      LOG(INFO) << "Failed in iteration #" << (iters+1) << " due to system::errc::operation_not_permitted, ec: " << ec;
+      continue;
     }
 
     if (ec == asio::error::no_permission) {
@@ -145,6 +146,7 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   body.size = err_str.size() - 1;
   ec = client->Read(&parser_.value());
   if (ec) {
+    LOG(ERROR) << "Error reading: ec: " << ec;
     return ec;
   }
 
@@ -152,6 +154,7 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   // We must do it as long as we plan to use this connection for more requests.
   ec = client->DrainResponse(&parser_.value());
   if (ec) {
+    LOG(ERROR) << "DrainResponse: ec: " << ec;
     return ec;
   }
 
