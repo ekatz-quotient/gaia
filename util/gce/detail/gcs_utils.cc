@@ -113,7 +113,10 @@ StatusObject<HttpsClientPool::ClientHandle> ApiSenderBase::SendGeneric(unsigned 
 
 auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsClient* client)
     -> error_code {
+  LOG(INFO) << "Starting SendRequestIterative";
   system::error_code ec = client->Send(req);
+  LOG(INFO) << "Error code from Send: " << ec;
+
   if (ec) {
     LOG(INFO) << "Error sending request " << ec;
     return ec;
@@ -133,7 +136,7 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   }
 
   const auto& msg = parser_->get();
-  VLOG(1) << "HeaderResp(" << client->native_handle() << "): " << msg;
+  LOG(INFO) << "HeaderResp(" << client->native_handle() << "): " << msg;
 
   // Partial content can appear because of the previous reconnect.
   if (msg.result() == h2::status::ok || msg.result() == h2::status::partial_content) {
@@ -146,7 +149,7 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   body.size = err_str.size() - 1;
   ec = client->Read(&parser_.value());
   if (ec) {
-    LOG(ERROR) << "Error reading: ec: " << ec;
+    LOG(INFO) << "Error reading: ec: " << ec;
     return ec;
   }
 
@@ -154,7 +157,7 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   // We must do it as long as we plan to use this connection for more requests.
   ec = client->DrainResponse(&parser_.value());
   if (ec) {
-    LOG(ERROR) << "DrainResponse: ec: " << ec;
+    LOG(INFO) << "DrainResponse: ec: " << ec;
     return ec;
   }
 
@@ -170,12 +173,12 @@ auto ApiSenderBufferBody::SendRequestIterative(const Request& req, http::HttpsCl
   }
 
   if (msg.result() == h2::status::forbidden) {
-    LOG(ERROR) <<  "Error accessing GCS: " << err_str.c_str();
+    LOG(INFO) <<  "Error accessing GCS: " << err_str.c_str();
 
     return system::errc::make_error_code(system::errc::operation_not_permitted);
   }
 
-  LOG(ERROR) << "Unexpected status " << msg << msg.result_int() << "\n" << err_str.c_str() << "\n";
+  LOG(INFO) << "Unexpected status " << msg << msg.result_int() << "\n" << err_str.c_str() << "\n";
 
   return h2::error::bad_status;
 }
