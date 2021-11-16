@@ -80,7 +80,7 @@ Status GcsReadFile::Open() {
   if (offs_)
     SetRange(offs_, kuint64max, &req);
 
-  auto handle_res = SendGeneric(3, req);
+  auto handle_res = SendGeneric(10, req);
   if (!handle_res.ok())
     return handle_res.status;
 
